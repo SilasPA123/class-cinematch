@@ -3,21 +3,24 @@
 // The browser cannot read letterboxd.com directly (CORS), so the site calls this instead.
 // It only fetches the public profile page; it stores nothing.
 
-const ALLOWED_ORIGIN = "*"; // tighten to your site, e.g. "https://<user>.github.io"
+// Only these sites may call the Worker from a browser.
+const ALLOWED_ORIGINS = ["https://silaspa123.github.io", "http://localhost:8765"];
 
-const cors = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Methods": "GET, OPTIONS"
+const corsFor = request => {
+  const origin = request.headers.get("Origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Vary": "Origin"
+  };
 };
-const json = (body, status = 200, extra = {}) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", ...cors, ...extra } });
 
 const decode = s => s
   .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'")
   .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
   .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
 
-export function parseFavorites(html) {
+function parseFavorites(html) {
   const section = html.match(/<section[^>]*id="favourites"[\s\S]*?<\/section>/);
   if (!section) return [];
   const films = [];
@@ -33,6 +36,10 @@ export function parseFavorites(html) {
 
 export default {
   async fetch(request) {
+    const cors = corsFor(request);
+    const json = (body, status = 200, extra = {}) =>
+      new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", ...cors, ...extra } });
+
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
 

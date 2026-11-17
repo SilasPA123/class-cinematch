@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1a">
+  <title>Class CineMatch</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <h1>Class CineMatch</h1>
+    <p>Tell us your four favorite films and see who in class has taste like yours.</p>
+  </header>
+
+  <main>
+    <div id="banner"></div>
+
+    <section class="card" id="join">
+      <h2>Your four favorites</h2>
+      <div id="form"></div>
+    </section>
+
+    <section id="mine" hidden>
+      <h2>Your matches</h2>
+      <div id="mine-list"></div>
+    </section>
+
+    <section id="crowd">
+      <h2 id="crowd-title">The class so far</h2>
+      <div id="crowd-body"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Film data by <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -328,7 +328,33 @@ function renderBanner() {
   }
 }
 
-function onPeople(list) {
+// Entries come from a shared database, so treat them as untrusted: keep only well-formed
+// people and films, with bounded sizes, before anything is rendered or compared.
+const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
+const strs = (v, n, max) => (Array.isArray(v) ? v.filter(x => typeof x === "string").slice(0, n).map(x => x.slice(0, max)) : []);
+function cleanFilm(f) {
+  if (!f || typeof f !== "object") return null;
+  const id = str(f.id, 40), title = str(f.title, 200);
+  if (!id || !title) return null;
+  return {
+    id, title,
+    year: Number.isInteger(f.year) && f.year > 1870 && f.year < 2100 ? f.year : null,
+    poster: typeof f.poster === "string" && /^\/[A-Za-z0-9_.-]{1,80}$/.test(f.poster) ? f.poster : null,
+    directors: strs(f.directors, 3, 80), genres: strs(f.genres, 8, 40), keywords: strs(f.keywords, 12, 60),
+    countries: strs(f.countries, 6, 3), lang: str(f.lang, 8) || null, cast: strs(f.cast, 3, 80),
+    overview: str(f.overview, 300)
+  };
+}
+function cleanPerson(p) {
+  if (!p || typeof p !== "object" || typeof p.id !== "string") return null;
+  const name = str(p.name, 40).trim();
+  const films = Array.isArray(p.films) ? p.films.slice(0, 4).map(cleanFilm) : [];
+  if (!name || films.length !== 4 || films.some(f => !f)) return null;
+  return { id: p.id, name, films };
+}
+
+function onPeople(raw) {
+  const list = (Array.isArray(raw) ? raw : []).slice(0, 500).map(cleanPerson).filter(Boolean);
   state.people = list;
   const me = list.find(p => p.id === state.myId);
   if (me && !state.hydrated) { // first time we see our saved entry: prefill the form

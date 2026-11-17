@@ -1,8 +1,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Cada aluno (login anônimo) só escreve o próprio documento, com formato validado.
-    // Todos podem ler, porque a turma inteira vê os matches.
+
+    // One film: a map with bounded, typed fields.
+    function validFilm(f) {
+      return f is map
+        && f.keys().hasOnly(['id', 'title', 'year', 'poster', 'directors', 'genres', 'keywords',
+                             'countries', 'lang', 'cast', 'overview', 'runtime'])
+        && f.id is string && f.id.size() > 0 && f.id.size() <= 40
+        && f.title is string && f.title.size() > 0 && f.title.size() <= 200
+        && (!('year' in f) || f.year == null || f.year is int)
+        && (!('poster' in f) || f.poster == null || (f.poster is string && f.poster.size() <= 80))
+        && (!('directors' in f) || (f.directors is list && f.directors.size() <= 3))
+        && (!('genres' in f) || (f.genres is list && f.genres.size() <= 8))
+        && (!('keywords' in f) || (f.keywords is list && f.keywords.size() <= 12))
+        && (!('countries' in f) || (f.countries is list && f.countries.size() <= 6))
+        && (!('cast' in f) || (f.cast is list && f.cast.size() <= 3))
+        && (!('lang' in f) || f.lang == null || (f.lang is string && f.lang.size() <= 8))
+        && (!('overview' in f) || (f.overview is string && f.overview.size() <= 300))
+        && (!('runtime' in f) || f.runtime == null || f.runtime is int);
+    }
+
+    // Each student (anonymous sign-in) can only write their own document, in a validated shape.
+    // Everyone can read, because the whole class sees the matches.
     match /participants/{uid} {
       allow read: if true;
       allow create, update: if request.auth != null
@@ -12,7 +32,11 @@ service cloud.firestore {
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 40
         && request.resource.data.films is list
-        && request.resource.data.films.size() == 4;
+        && request.resource.data.films.size() == 4
+        && validFilm(request.resource.data.films[0])
+        && validFilm(request.resource.data.films[1])
+        && validFilm(request.resource.data.films[2])
+        && validFilm(request.resource.data.films[3]);
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
   }

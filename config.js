@@ -24,4 +24,4 @@ export const TMDB_KEY = "8b4a29c4268e6e6245375f1501069df7";
 
 // URL do Cloudflare Worker que lê os favoritos do Letterboxd (worker/letterboxd-worker.js).
 // Vazio = o campo de usuário do Letterboxd não aparece no site.
-export const LETTERBOXD_PROXY = "";
+export const LETTERBOXD_PROXY = "https://cinematch-letterboxd.silaspa.workers.dev";

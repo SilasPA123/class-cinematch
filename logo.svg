@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Class CineMatch">
+  <title>Class CineMatch</title>
+  <defs>
+    <clipPath id="cm-left">
+      <rect x="2" y="10" width="38" height="44" rx="9"/>
+    </clipPath>
+    <mask id="cm-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <!-- the two frames -->
+      <rect x="2" y="10" width="38" height="44" rx="9" fill="#ffffff"/>
+      <rect x="24" y="10" width="38" height="44" rx="9" fill="#ffffff"/>
+      <!-- their overlap, knocked out -->
+      <g clip-path="url(#cm-left)">
+        <rect x="24" y="10" width="38" height="44" rx="9" fill="#000000"/>
+      </g>
+      <!-- sprocket perforations -->
+      <g fill="#000000">
+        <rect x="6" y="17" width="4" height="6" rx="1.5"/>
+        <rect x="6" y="29" width="4" height="6" rx="1.5"/>
+        <rect x="6" y="41" width="4" height="6" rx="1.5"/>
+        <rect x="54" y="17" width="4" height="6" rx="1.5"/>
+        <rect x="54" y="29" width="4" height="6" rx="1.5"/>
+        <rect x="54" y="41" width="4" height="6" rx="1.5"/>
+      </g>
+    </mask>
+  </defs>
+  <rect x="0" y="0" width="64" height="64" fill="#5db4f0" mask="url(#cm-mask)"/>
+</svg>

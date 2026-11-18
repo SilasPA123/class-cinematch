@@ -1,4 +1,4 @@
-# Class CineMatch
+# CineMatch
 
 A small class activity. Everyone enters a name and four favorite films, and the page shows who has
 similar taste and why. Entries update live for the whole class.

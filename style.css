@@ -324,3 +324,36 @@ footer p { max-width: 70ch; margin: 0 auto; }
 .together-new > .msg { grid-column: 1 / -1; margin: 0; }
 .together-new .film { grid-column: 1; }
 @media (max-width: 600px) { .together-new { grid-template-columns: 1fr; } .together-new .together-why { grid-column: 1; } }
+
+/* ---------- class awards ---------- */
+.awards-wrap { margin-bottom: 28px; }
+.awards-wrap > h3 { margin: 0 0 16px; font-size: 0.85rem; letter-spacing: 0.18em; text-transform: uppercase; }
+.awards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.award {
+  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 16px 22px;
+  background: var(--ticket); border: 3px solid var(--ink); border-radius: 10px; box-shadow: 6px 6px 0 var(--ink);
+}
+.award::before { content: ""; position: absolute; left: 8px; top: 10px; bottom: 10px; border-left: 3px dashed var(--ticket-line); }
+.award-title { font: 700 0.75rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.award-who { font: 400 1.35rem/1.15 var(--display); }
+.award-detail { font-size: 0.88rem; color: #3D1A12; }
+
+/* ---------- taste groups ---------- */
+.groups-title { margin: 0 0 10px; font: 700 0.8rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: #7A4A00; }
+.groups { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.groups li { display: flex; gap: 10px; align-items: flex-start; }
+.groups .k { flex: 0 0 auto; width: 14px; height: 14px; margin-top: 4px; border-radius: 50%; border: 2px solid var(--ink); }
+.groups b { display: block; }
+.groups .gm { display: block; font-size: 0.9rem; }
+.groups .gt { display: block; font-size: 0.82rem; color: var(--muted-light); }
+.map-pt .dot { stroke: var(--ink); stroke-width: 1.5; }
+.map-pt.me .dot { stroke: var(--ink); stroke-width: 3.5; }
+.map-tip .tg { color: var(--cream); font-weight: 700; }
+.you-key { margin: 0 0 8px; font-size: 0.85rem; }
+
+/* ---------- taste profiles ---------- */
+.profile-card { margin-bottom: 28px; background: var(--ink); color: var(--cream); box-shadow: 8px 8px 0 var(--ticket); }
+.profile-card h3 { color: var(--ground); }
+.profile-text { margin: 0; font: 700 clamp(1.25rem, 2.4vw, 1.7rem)/1.3 var(--sans); max-width: 46ch; }
+.profile-card .profile-note { margin: 12px 0 0; color: var(--muted-dark); font-size: 0.82rem; }
+.profile-line { margin: 14px 0 0; padding: 10px 14px; background: #FFF6DC; border-left: 4px solid var(--ground); font-size: 0.95rem; }

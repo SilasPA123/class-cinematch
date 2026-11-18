@@ -5,6 +5,12 @@ import { compare, allPairs } from "./match.js";
 import { PRESETS } from "./presets.js";
 import { pcoa } from "./pcoa.js";
 import { recommendFor, recommendForPair } from "./recommend.js";
+import { classAwards } from "./awards.js";
+import { tasteGroups, describeGroup } from "./groups.js";
+import { hasProfiles, tasteProfile } from "./profile.js";
+
+// categorical colors for taste groups (validated for color-vision deficiency; dots always carry a name label too)
+const GROUP_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"];
 
 // match score between two people, cached until the class list changes
 let simCache = new Map();
@@ -264,6 +270,8 @@ function pairCard(pair, { open = false } = {}) {
   };
   const col = p => h("div", {}, h("h4", {}, pair.mine && p === a ? "You" : p.name), h("div", { class: "tiles" }, p.films.map(tile)));
   const newBox = beyondPair(pair);
+  const profBoxes = [pair.mine ? null : profileLine(a), profileLine(b)].filter(Boolean);
+  const lazy = [...profBoxes, newBox].filter(Boolean);
   const details = h("details", { class: "pair", open },
     h("summary", {},
       h("span", { class: "names" }, pair.mine ? b.name : `${a.name} and ${b.name}`),
@@ -271,13 +279,16 @@ function pairCard(pair, { open = false } = {}) {
       h("span", { class: "sum" }, summary),
       h("span", { class: "bar" }, h("i", { style: `width:${pct}%` }))),
     h("div", { class: "body" },
+      ...profBoxes,
       reasons.length ? h("ul", {}, reasons.map(r => h("li", {}, r.text))) : h("p", { class: "msg" }, "Nothing in common that we could find."),
       watchTogether(pair),
       newBox,
       h("div", { class: "cols" }, col(a), col(b))));
-  if (newBox) {
-    if (open) { newBox.loaded = true; queueMicrotask(newBox.load); }
-    details.addEventListener("toggle", () => { if (details.open && !newBox.loaded) { newBox.loaded = true; newBox.load(); } });
+  if (lazy.length) {
+    let loaded = false;
+    const loadAll = () => { if (!loaded) { loaded = true; lazy.forEach(b => b.load()); } };
+    if (open) queueMicrotask(loadAll);
+    details.addEventListener("toggle", () => { if (details.open) loadAll(); });
   }
   return details;
 }
@@ -322,6 +333,21 @@ function watchTogether(pair) {
     h("span", { class: "together-tag" }, "Watch together"),
     filmCard(rec.film, { small: true }),
     h("p", { class: "together-why" }, `${pair.mine ? "Neither of you" : "Neither of them"} picked it, but ${who} did, and ${voters.length === 1 && voters[0] !== "you" ? "matches" : "match"} ${both} well.`));
+}
+
+function profileCard(me) {
+  const text = h("p", { class: "profile-text" }, "Reading your ticket stubs...");
+  fillLater(text, tasteProfile(me), t => [t || ""]);
+  return h("div", { class: "card profile-card" },
+    h("h3", {}, "Your taste, in two lines"), text,
+    h("p", { class: "msg profile-note" }, "Written by AI (Claude) from your four films."));
+}
+
+function profileLine(person) {
+  if (!hasProfiles) return null;
+  const box = h("p", { class: "profile-line" }, "Reading ticket stubs...");
+  box.load = () => fillLater(box, tasteProfile(person), t => [h("b", {}, `${person.id === state.myId ? "Your" : firstName(person) + "'s"} taste: `), t || ""]);
+  return box;
 }
 
 function recCard(me) {
@@ -374,6 +400,7 @@ function renderMine() {
     root.append(h("p", { class: "msg" }, "You're the first one here. Matches show up as soon as someone else joins."));
     return;
   }
+  if (hasProfiles) root.append(profileCard(me));
   root.append(recCard(me));
   const ranked = others.map(o => ({ a: me, b: o, mine: true, ...compare(me, o, true) })).sort((x, y) => y.raw - x.raw);
   const shown = state.showAll ? ranked : ranked.slice(0, 5);
@@ -409,6 +436,15 @@ function tasteMap(people) {
   const D = pct.map((row, i) => row.map((p, j) => (i === j ? 0 : 1 - p / 100)));
   const res = pcoa(D);
   if (!res) return card;
+  const grp = tasteGroups(D);
+  const labels = grp && grp.labels;
+  const groupInfo = labels ? grp.members.map(m => describeGroup(m.map(i => people[i]))) : [];
+  const used = new Set();
+  const groupName = groupInfo.map((g, gi) => {
+    const pick = g.genres.find(x => !used.has(x)) || g.genres[0] || "Mixed";
+    used.add(pick);
+    return grp.members[gi].length === 1 ? `Flying solo (${pick.toLowerCase()})` : `The ${pick.toLowerCase()} crowd`;
+  });
 
   const narrow = window.innerWidth < 600;
   const W = narrow ? 440 : 640, H = narrow ? 480 : 420, PAD = narrow ? 28 : 44, LABEL = narrow ? 70 : 120;
@@ -439,6 +475,7 @@ function tasteMap(people) {
     const j = nearest(i);
     tip.replaceChildren(
       h("b", {}, i === meIdx ? "You" : people[i].name),
+      labels ? h("span", { class: "tg" }, groupName[labels[i]]) : null,
       h("span", {}, people[i].films.map(f => f.title).join(" · ")),
       j >= 0 ? h("span", { class: "tw" }, `Closest: ${j === meIdx ? "you" : people[j].name} (${pct[i][j]}%)`) : null);
     tip.style.left = (100 * px / W) + "%";
@@ -457,7 +494,7 @@ function tasteMap(people) {
     const g = s("g", { class: "map-pt" + (mine ? " me" : ""), tabindex: "0",
       "aria-label": `${mine ? "You" : people[i].name}: ${people[i].films.map(f => f.title).join(", ")}` },
       s("circle", { cx: px, cy: py, r: 18, class: "hit" }),
-      s("circle", { cx: px, cy: py, r: mine ? 9 : 7, class: "dot" }),
+      s("circle", { cx: px, cy: py, r: mine ? 10 : 7, class: "dot", style: labels ? `fill:${GROUP_COLORS[labels[i]]}` : null }),
       s("text", { x: px + (right ? 14 : -14), y: py + 5, "text-anchor": right ? "start" : "end", class: "lbl" }, label));
     g.addEventListener("mouseenter", () => show(i, px, py));
     g.addEventListener("focus", () => show(i, px, py));
@@ -468,11 +505,37 @@ function tasteMap(people) {
 
   const side = h("div", { class: "map-side" });
   card.append(h("div", { class: "map-layout" }, h("div", { class: "map-wrap" }, svg, tip), side));
-  if (meIdx >= 0) side.append(h("div", { class: "map-legend" },
-    h("span", {}, h("i", { class: "k me" }), "You"), h("span", {}, h("i", { class: "k" }), "Classmates")));
+  if (labels) {
+    side.append(h("h4", { class: "groups-title" }, "Taste groups"),
+      h("ul", { class: "groups" }, grp.members.map((m, gi) => {
+        const g = groupInfo[gi];
+        const traits = [g.genres.length ? `Mostly ${g.genres.slice(0, 2).map(x => x.toLowerCase()).join(" and ")}` : null,
+          g.directors.length ? `shared love of ${g.directors.join(" and ")}` : null,
+          g.decade ? `lots of ${g.decade}s` : null].filter(Boolean).join(" · ");
+        const names = m.map(i => (i === meIdx ? "you" : firstName(people[i])));
+        return h("li", {},
+          h("i", { class: "k", style: `background:${GROUP_COLORS[gi]}` }),
+          h("div", {}, h("b", {}, groupName[gi]), h("span", { class: "gm" }, names.join(", ")), traits ? h("span", { class: "gt" }, traits) : null));
+      })));
+  } else {
+    side.append(h("p", { class: "msg" }, "No clear taste groups yet: everyone overlaps a bit. Groups appear when the class splits into clusters."));
+  }
+  if (meIdx >= 0) side.append(h("p", { class: "msg you-key" }, "Your dot is the big one with the dark ring."));
   side.append(h("p", { class: "msg map-note" },
-    `Distance between two people = 100% minus their match score. The two axes are the directions that spread the class out the most (principal coordinates analysis); together they show ${e1 + e2}% of the variation, so some differences are hidden in other dimensions.`));
+    `Distance between two people = 100% minus their match score. The two axes are the directions that spread the class out the most (principal coordinates analysis); together they show ${e1 + e2}% of the variation. Groups come from average-linkage clustering on the same distances${labels ? `, with ${grp.k} groups chosen because that split separates people best (silhouette ${grp.silhouette.toFixed(2)})` : ""}.`));
   return card;
+}
+
+function awardsBlock(people) {
+  const awards = classAwards(people, sim);
+  if (!awards.length) return h("p", { class: "msg" }, "Class awards appear once at least three people have joined.");
+  const nm = p => (p.id === state.myId ? `${firstName(p)} (you)` : firstName(p));
+  return h("div", { class: "awards-wrap" },
+    h("h3", {}, "Class awards"),
+    h("ul", { class: "awards" }, awards.map(a => h("li", { class: "award" },
+      h("span", { class: "award-title" }, a.title),
+      h("b", { class: "award-who" }, a.winners.length > 3 ? `${a.winners.length}-way tie` : a.winners.map(nm).join(" & ")),
+      h("span", { class: "award-detail" }, a.detail)))));
 }
 
 function renderCrowd() {
@@ -494,6 +557,7 @@ function renderCrowd() {
   const films = [...filmCount.values()].sort((x, y) => y.n - x.n || x.f.title.localeCompare(y.f.title)).slice(0, 6);
   const repeated = top(dirCount, 8).filter(([, n]) => n > 1).slice(0, 6);
 
+  body.append(awardsBlock(people));
   body.append(h("div", { class: "grid2" },
     h("div", { class: "card" }, h("h3", {}, "Most picked"),
       h("ul", { class: "rank" }, films.map(({ f, n }) =>

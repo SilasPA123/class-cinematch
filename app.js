@@ -2,6 +2,7 @@ import { createStore } from "./store.js";
 import { searchFilms, getFilm, posterUrl, hasTMDB, resolvePreset, presetAvailableOffline, importLetterboxd, letterboxdProxy } from "./films.js";
 import { compare, allPairs } from "./match.js";
 import { PRESETS } from "./presets.js";
+import { pcoa } from "./pcoa.js";
 
 const store = createStore();
 const state = {
@@ -281,6 +282,96 @@ function renderMine() {
   }
 }
 
+// ---------- taste map (PCoA on match distances) ----------
+const SVG_NS = "http://www.w3.org/2000/svg";
+const s = (tag, attrs = {}, ...kids) => {
+  const e = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v);
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+};
+
+function tasteMap(people) {
+  const card = h("div", { class: "card map-card" },
+    h("h3", {}, "Taste map"),
+    h("p", { class: "map-sub" }, "Each dot is a person. The closer two dots are, the more similar their taste."));
+  if (people.length < 3) {
+    card.append(h("p", { class: "msg" }, "The map appears once at least three people have joined."));
+    return card;
+  }
+  // distance = 1 - match score, from the same compare() the match cards use
+  const n = people.length;
+  const pct = Array.from({ length: n }, () => Array(n).fill(100));
+  for (let i = 0; i < n; i++)
+    for (let j = i + 1; j < n; j++) pct[i][j] = pct[j][i] = compare(people[i], people[j]).pct;
+  const D = pct.map((row, i) => row.map((p, j) => (i === j ? 0 : 1 - p / 100)));
+  const res = pcoa(D);
+  if (!res) return card;
+
+  const narrow = window.innerWidth < 600;
+  const W = narrow ? 440 : 720, H = narrow ? 520 : 440, PAD = narrow ? 28 : 44, LABEL = narrow ? 70 : 120;
+  const xs = res.coords.map(c => c[0]), ys = res.coords.map(c => c[1]);
+  const span = a => Math.max(1e-6, Math.max(...a) - Math.min(...a));
+  // one scale for both axes, so distances on screen stay true to the analysis
+  const k = Math.min((W - 2 * PAD - LABEL) / span(xs), (H - 2 * PAD) / span(ys));
+  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+  const X = x => W / 2 + (x - cx) * k, Y = y => H / 2 - (y - cy) * k;
+
+  const e1 = Math.round(100 * res.explained[0]), e2 = Math.round(100 * (res.explained[1] || 0));
+  const meIdx = people.findIndex(p => p.id === state.myId);
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+    "aria-label": `Taste map of ${n} people. Axis 1 shows ${e1}% and axis 2 shows ${e2}% of the variation in taste.` });
+  svg.append(
+    s("line", { x1: X(0), y1: 12, x2: X(0), y2: H - 12, class: "map-axis" }),
+    s("line", { x1: 12, y1: Y(0), x2: W - 12, y2: Y(0), class: "map-axis" }),
+    s("text", { x: W - 14, y: Y(0) + 22, "text-anchor": "end", class: "map-axis-label" }, `PCo1 · ${e1}%`),
+    s("text", { x: X(0) + 8, y: 24, class: "map-axis-label" }, `PCo2 · ${e2}%`));
+
+  const tip = h("div", { class: "map-tip", hidden: true, role: "status" });
+  const nearest = i => {
+    let best = -1;
+    for (let j = 0; j < n; j++) if (j !== i && (best < 0 || pct[i][j] > pct[i][best])) best = j;
+    return best;
+  };
+  const show = (i, px, py) => {
+    const j = nearest(i);
+    tip.replaceChildren(
+      h("b", {}, i === meIdx ? "You" : people[i].name),
+      h("span", {}, people[i].films.map(f => f.title).join(" · ")),
+      j >= 0 ? h("span", { class: "tw" }, `Closest: ${j === meIdx ? "you" : people[j].name} (${pct[i][j]}%)`) : null);
+    tip.style.left = (100 * px / W) + "%";
+    tip.className = "map-tip" + (px < W * 0.3 ? " lft" : px > W * 0.7 ? " rgt" : "");
+    tip.style.top = (100 * py / H) + "%";
+    tip.hidden = false;
+  };
+  const hide = () => { tip.hidden = true; };
+
+  // draw others first, you last (on top)
+  const idx = people.map((_, i) => i).sort((a, b) => (a === meIdx) - (b === meIdx));
+  for (const i of idx) {
+    const px = X(xs[i]), py = Y(ys[i]), mine = i === meIdx;
+    const right = px < W - (narrow ? 90 : 150);
+    const label = mine ? "You" : people[i].name.replace(/\s*\(demo\)$/, "");
+    const g = s("g", { class: "map-pt" + (mine ? " me" : ""), tabindex: "0",
+      "aria-label": `${mine ? "You" : people[i].name}: ${people[i].films.map(f => f.title).join(", ")}` },
+      s("circle", { cx: px, cy: py, r: 18, class: "hit" }),
+      s("circle", { cx: px, cy: py, r: mine ? 9 : 7, class: "dot" }),
+      s("text", { x: px + (right ? 14 : -14), y: py + 5, "text-anchor": right ? "start" : "end", class: "lbl" }, label));
+    g.addEventListener("mouseenter", () => show(i, px, py));
+    g.addEventListener("focus", () => show(i, px, py));
+    g.addEventListener("mouseleave", hide);
+    g.addEventListener("blur", hide);
+    svg.append(g);
+  }
+
+  card.append(h("div", { class: "map-wrap" }, svg, tip));
+  if (meIdx >= 0) card.append(h("div", { class: "map-legend" },
+    h("span", {}, h("i", { class: "k me" }), "You"), h("span", {}, h("i", { class: "k" }), "Classmates")));
+  card.append(h("p", { class: "msg map-note" },
+    `Distance between two people = 100% minus their match score. The two axes are the directions that spread the class out the most (principal coordinates analysis); together they show ${e1 + e2}% of the variation, so some differences are hidden in other dimensions.`));
+  return card;
+}
+
 function renderCrowd() {
   const people = state.people;
   $("crowd-title").textContent = `The class so far (${plural(people.length, "person", "people")})`;
@@ -310,6 +401,8 @@ function renderCrowd() {
       h("div", { class: "chips" }, repeated.length
         ? repeated.map(([d, n]) => h("span", { class: "chip" }, `${d} · ${n}`))
         : h("span", { class: "msg" }, "None so far.")))));
+
+  body.append(tasteMap(people));
 
   const pairs = allPairs(people).slice(0, 3);
   if (pairs.length) {

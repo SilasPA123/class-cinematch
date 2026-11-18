@@ -3,40 +3,109 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f4ec">
+  <meta name="theme-color" content="#F2B705">
   <title>CineMatch</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Courier+Prime:wght@700&family=Space+Grotesk:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="hero">
-    <img class="mark" src="logo.svg" alt="" width="46" height="46">
-    <h1>CineMatch</h1>
-    <p>Tell us your four favorite films and see who in class has taste like yours.</p>
+    <nav class="topbar" aria-label="Main">
+      <span class="brand">cinematch</span>
+      <a class="pill dark" href="#join">Add my films</a>
+    </nav>
+
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Now showing · <span id="hero-count">our class</span></p>
+        <h1 class="wordmark">cinematch</h1>
+        <p class="tagline">Great minds watch alike.</p>
+        <p class="lede">Tell us your four favorite films and see who in class has taste like yours, and why.</p>
+        <div class="cta-row">
+          <a class="pill dark big" href="#join">Grab a ticket ↓</a>
+          <a class="pill outline big" href="#how">How the match works</a>
+        </div>
+      </div>
+
+      <div class="scene" aria-hidden="true">
+        <div class="beam"></div>
+        <div class="spool r1"></div>
+        <div class="spool r2"></div>
+        <div class="projector"></div>
+        <div class="stub s1">
+          <div class="stub-in"><span class="serial">№ 004417</span><span class="stub-main"><b>ADMIT ONE</b><small>CINEMATCH · SEAT A</small></span></div>
+        </div>
+        <div class="stub s2">
+          <div class="stub-in"><span class="serial">№ 004418</span><span class="stub-main"><b>ADMIT ONE</b><small>CINEMATCH · SEAT B</small></span></div>
+        </div>
+        <div class="badge">It’s a<br>match</div>
+      </div>
+    </div>
+
+    <a class="scroll-cue" href="#join">
+      Scroll to add your films
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </a>
   </header>
+  <div class="strip" aria-hidden="true"></div>
 
   <main>
-    <div id="banner"></div>
+    <section class="reel dark" id="join">
+      <div class="wrap">
+        <p class="eyebrow">Reel 01 · Your picks</p>
+        <h2 class="display">Your four favorites</h2>
+        <p class="lede">Search for them, pick from the popular ones, or bring them in from Letterboxd. No guilty-pleasure shaming: that's what the comparison is for.</p>
+        <div id="banner"></div>
+        <div id="form"></div>
+      </div>
+    </section>
+    <div class="strip" aria-hidden="true"></div>
 
-    <section class="card" id="join">
-      <h2>Your four favorites</h2>
-      <div id="form"></div>
+    <section class="reel cream" id="mine" hidden>
+      <div class="wrap">
+        <p class="eyebrow">Reel 02 · Your matches</p>
+        <h2 class="display">Your movie twins</h2>
+        <div id="mine-list"></div>
+      </div>
     </section>
 
-    <section id="mine" hidden>
-      <h2>Your matches</h2>
-      <div id="mine-list"></div>
+    <section class="reel ground" id="crowd">
+      <div class="wrap">
+        <p class="eyebrow">Reel 03 · The whole class</p>
+        <h2 class="display" id="crowd-title">The class so far</h2>
+        <div id="crowd-body"></div>
+      </div>
+    </section>
+    <div class="strip" aria-hidden="true"></div>
+
+    <section class="reel dark" id="how">
+      <div class="wrap">
+        <p class="eyebrow">Behind the projector</p>
+        <h2 class="display">How the match works</h2>
+        <p class="lede">With only four films each, identical lists are rare. So every pair of people is compared on several things at once, and each one that overlaps adds to the score and to the explanation you see.</p>
+        <div class="how-grid">
+          <div class="how-card"><span class="how-n">1</span><h3>Same films</h3><p>The strongest signal. Every film you both picked counts the most.</p></div>
+          <div class="how-card"><span class="how-n">2</span><h3>Same directors</h3><p>Different films by the same director still say a lot about taste.</p></div>
+          <div class="how-card"><span class="how-n">3</span><h3>Genres and themes</h3><p>How much your genres and TMDB keywords overlap, as a share of everything on both lists.</p></div>
+          <div class="how-card"><span class="how-n">4</span><h3>Era, place, cast</h3><p>Shared decades, countries, languages and actors add smaller amounts.</p></div>
+        </div>
+        <p class="fineprint">The points add up and are turned into a percentage that rises quickly at first and then levels off, so a few strong overlaps already make a high match. The code is in <code>match.js</code>.</p>
+      </div>
     </section>
 
-    <section id="crowd">
-      <h2 id="crowd-title">The class so far</h2>
-      <div id="crowd-body"></div>
+    <section class="closing">
+      <p class="closing-line">Great minds<br>watch alike.</p>
+      <a class="pill yellow big" href="#join">Add my films ↑</a>
     </section>
   </main>
 
   <footer>
     <p>Film data by <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
   </footer>
+  <div class="strip" aria-hidden="true"></div>
 
   <script type="module" src="app.js"></script>
 </body>

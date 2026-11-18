@@ -111,7 +111,7 @@ function refreshPicker() {
 function renderSlots(slotsEl) {
   slotsEl.replaceChildren();
   state.slots.forEach((film, i) => {
-    const box = h("div", { class: "slot" }, h("div", { class: "num" }, "Film " + (i + 1)));
+    const box = h("div", { class: "slot" }, h("div", { class: "num" }, "ADMIT ONE · № 0" + (i + 1)));
     if (film) box.append(filmCard(film, { onRemove: () => { state.slots[i] = null; refreshPicker(); updateSubmit(); } }));
     else box.append(searchBox(i));
     slotsEl.append(box);
@@ -211,14 +211,15 @@ function updateSubmit() {
   if (!btn) return;
   const ready = state.name.trim().length > 0 && state.slots.every(Boolean);
   btn.disabled = !ready || state.saving;
-  btn.textContent = mine() ? "Save changes" : "Join";
+  btn.textContent = mine() ? "Save changes" : "Print my ticket";
 }
 
 async function submitEntry() {
   state.saving = true; updateSubmit();
   try {
     await store.save({ name: state.name.trim().slice(0, 40), films: state.slots });
-    setMsg("You're in. Your matches are below.");
+    setMsg("Ticket printed. Your matches are below.");
+    setTimeout(() => { const m = $("mine"); if (m && !m.hidden) m.scrollIntoView({ behavior: "smooth", block: "start" }); }, 600);
   } catch (err) {
     console.error(err);
     setMsg("That didn't save. Check your connection and try again.", true);
@@ -367,6 +368,8 @@ function onPeople(raw) {
   }
   renderMine();
   renderCrowd();
+  const hc = $("hero-count");
+  if (hc) hc.textContent = list.length ? plural(list.length, "classmate", "classmates") : "our class";
 }
 
 // ---------- start ----------

@@ -67,7 +67,7 @@ function renderForm() {
   root.replaceChildren();
   const name = h("input", { type: "text", maxlength: "40", placeholder: "What should we call you?", autocomplete: "nickname", value: state.name });
   name.addEventListener("input", () => { state.name = name.value; updateSubmit(); });
-  root.append(h("label", { class: "field" }, "Name", name));
+  root.append(h("label", { class: "field" }, "Name (or alias if you want to be anonymous)", name));
 
   if (letterboxdProxy) root.append(letterboxdRow());
 
@@ -532,10 +532,20 @@ function awardsBlock(people) {
   const nm = p => (p.id === state.myId ? `${firstName(p)} (you)` : firstName(p));
   return h("div", { class: "awards-wrap" },
     h("h3", {}, "Class awards"),
-    h("ul", { class: "awards" }, awards.map(a => h("li", { class: "award" },
-      h("span", { class: "award-title" }, a.title),
-      h("b", { class: "award-who" }, a.winners.length > 3 ? `${a.winners.length}-way tie` : a.winners.map(nm).join(" & ")),
-      h("span", { class: "award-detail" }, a.detail)))));
+    h("ul", { class: "awards" }, awards.map((a, i) => h("li", { class: "award" },
+      h("span", { class: "award-kicker" }, "And the award for"),
+      h("b", { class: "award-title" }, a.title),
+      h("span", { class: "award-kicker" }, "goes to"),
+      h("span", { class: "award-who" }, a.winners.length > 3 ? `${a.winners.length}-way tie` : a.winners.map(nm).join(" & ")),
+      h("span", { class: "award-detail" }, a.detail),
+      awardSeal(i % 2 ? -10 : 12)))));
+}
+
+function awardSeal(deg) {
+  const svg = s("svg", { viewBox: "0 0 24 24", width: "24", height: "24", "aria-hidden": "true" },
+    s("path", { d: "M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.85L12 16.9l-5.25 2.75 1-5.85L3.5 9.7l5.9-.9z",
+      fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linejoin": "round" }));
+  return h("span", { class: "award-seal", style: `transform: rotate(${deg}deg)` }, svg);
 }
 
 function renderCrowd() {

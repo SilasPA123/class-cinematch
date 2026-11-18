@@ -26,7 +26,7 @@ code { font-family: var(--mono); font-size: 0.95em; }
 
 /* ---------- shared bits ---------- */
 .eyebrow { margin: 0; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; }
-.display { margin: 12px 0 0; font: 400 clamp(2.2rem, 5vw, 3.8rem)/1.05 var(--display); letter-spacing: 0.005em; }
+.display { margin: 0; font: 400 clamp(2.2rem, 5vw, 3.8rem)/1.05 var(--display); letter-spacing: 0.005em; }
 .lede { margin: 16px 0 0; max-width: 62ch; font-size: 1.12rem; line-height: 1.55; }
 .wrap { max-width: 1120px; margin: 0 auto; }
 .reel { padding: 88px 5%; }
@@ -325,18 +325,23 @@ footer p { max-width: 70ch; margin: 0 auto; }
 .together-new .film { grid-column: 1; }
 @media (max-width: 600px) { .together-new { grid-template-columns: 1fr; } .together-new .together-why { grid-column: 1; } }
 
-/* ---------- class awards ---------- */
+/* ---------- class awards: envelope reveal ---------- */
 .awards-wrap { margin-bottom: 28px; }
 .awards-wrap > h3 { margin: 0 0 16px; font-size: 0.85rem; letter-spacing: 0.18em; text-transform: uppercase; }
-.awards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.awards { list-style: none; margin: 0; padding: 14px 10px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 28px 24px; }
 .award {
-  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 16px 18px 16px 22px;
-  background: var(--ticket); border: 3px solid var(--ink); border-radius: 10px; box-shadow: 6px 6px 0 var(--ink);
+  position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 22px 18px 20px; background: var(--paper); border: 3px solid var(--ink); border-radius: 10px;
+  box-shadow: 6px 6px 0 var(--ink);
 }
-.award::before { content: ""; position: absolute; left: 8px; top: 10px; bottom: 10px; border-left: 3px dashed var(--ticket-line); }
-.award-title { font: 700 0.75rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-.award-who { font: 400 1.35rem/1.15 var(--display); }
-.award-detail { font-size: 0.88rem; color: #3D1A12; }
+.award-kicker { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.award-title { margin: 8px 0 10px; font: 400 clamp(1.7rem, 2.6vw, 2.1rem)/1.05 var(--display); }
+.award-who { margin-top: 6px; font-size: 1.35rem; font-weight: 700; line-height: 1.2; }
+.award-detail { margin-top: 4px; font-size: 0.9rem; color: var(--muted-light); }
+.award-seal {
+  position: absolute; top: -16px; right: -12px; width: 52px; height: 52px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--ticket); border: 3px solid var(--ink); color: var(--ink);
+}
 
 /* ---------- taste groups ---------- */
 .groups-title { margin: 0 0 10px; font: 700 0.8rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: #7A4A00; }

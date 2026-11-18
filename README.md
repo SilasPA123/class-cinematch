@@ -47,8 +47,9 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 ## How the pieces fit together
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph Browser["Browser (GitHub Pages)"]
+    direction TB
     APP["app.js<br/>rendering and state"]
     FILMS["films.js"]
     STORE["store.js"]

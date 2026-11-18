@@ -30,7 +30,7 @@ Commit, wait a minute for GitHub Pages, and the profiles appear.
 ## Notes
 
 - `ALLOWED_ORIGINS` at the top of the Worker lists the sites allowed to use it
-  (`https://mariamendoza28.github.io` and localhost). Add any other address you host the site on.
+  (`https://silaspa123.github.io`, `https://mariamendoza28.github.io` and localhost). Add any other address you host the site on.
 - Answers are cached per film list, so each person's list costs one API call, not one per page view.
   Each call is a few hundred tokens with `claude-haiku-5-5`, so a whole class costs well under a cent.
 - The origin check stops other websites from using your Worker in a browser, but a determined person could

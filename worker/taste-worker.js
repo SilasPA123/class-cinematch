@@ -4,7 +4,7 @@
 // Answers are cached per film list, so each list costs one API call.
 
 // Only these sites may call the Worker from a browser.
-const ALLOWED_ORIGINS = ["https://mariamendoza28.github.io", "http://localhost:8765"];
+const ALLOWED_ORIGINS = ["https://silaspa123.github.io", "https://mariamendoza28.github.io", "http://localhost:8765"];
 const MODEL = "claude-haiku-5-5";
 
 const cors = origin => ({

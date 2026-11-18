@@ -9,13 +9,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Courier+Prime:wght@700&family=Space+Grotesk:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
   <header class="hero">
     <nav class="topbar" aria-label="Main">
       <span class="brand">cinematch</span>
-      <a class="pill dark" href="#join">Add my films</a>
+      <span class="topbar-actions">
+        <button class="pill outline share-open" type="button">Share</button>
+        <a class="pill dark" href="#join">Add my films</a>
+      </span>
     </nav>
 
     <div class="hero-grid">
@@ -94,7 +97,10 @@
 
     <section class="closing">
       <p class="closing-line">Great minds<br>watch alike.</p>
-      <a class="pill yellow big" href="#join">Add my films ↑</a>
+      <div class="closing-actions">
+        <a class="pill yellow big" href="#join">Add my films ↑</a>
+        <button class="pill ghost big share-open" type="button">Share with the class</button>
+      </div>
     </section>
   </main>
 
@@ -103,6 +109,19 @@
   </footer>
   <div class="strip" aria-hidden="true"></div>
 
+  <dialog class="share" id="share" aria-labelledby="share-title">
+    <button class="share-x" type="button" aria-label="Close">×</button>
+    <p class="eyebrow" id="share-title">Scan to join</p>
+    <div class="share-qr" id="share-qr" role="img" aria-label="QR code with the link to this page"></div>
+    <p class="share-url" id="share-url"></p>
+    <div class="share-actions">
+      <button class="pill dark" type="button" id="share-copy">Copy link</button>
+      <button class="pill outline" type="button" id="share-send" hidden>Send link</button>
+    </div>
+    <p class="share-msg" id="share-msg" role="status"></p>
+  </dialog>
+
   <script type="module" src="app.js?v=7"></script>
+  <script type="module" src="share.js?v=1"></script>
 </body>
 </html>

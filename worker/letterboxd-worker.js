@@ -4,7 +4,7 @@
 // It only fetches the public profile page; it stores nothing.
 
 // Only these sites may call the Worker from a browser.
-const ALLOWED_ORIGINS = ["https://silaspa123.github.io", "http://localhost:8765"];
+const ALLOWED_ORIGINS = ["https://silaspa123.github.io", "https://mariamendoza28.github.io", "http://localhost:8765"];
 
 const corsFor = request => {
   const origin = request.headers.get("Origin") || "";

@@ -3,6 +3,17 @@ import { searchFilms, getFilm, posterUrl, hasTMDB, resolvePreset, presetAvailabl
 import { compare, allPairs } from "./match.js";
 import { PRESETS } from "./presets.js";
 import { pcoa } from "./pcoa.js";
+import { recommendFor, recommendForPair } from "./recommend.js";
+
+// match score between two people, cached until the class list changes
+let simCache = new Map();
+const sim = (a, b) => {
+  if (a.id === b.id) return 100;
+  const key = a.id < b.id ? a.id + "|" + b.id : b.id + "|" + a.id;
+  if (!simCache.has(key)) simCache.set(key, compare(a, b).pct);
+  return simCache.get(key);
+};
+const firstName = p => p.name.replace(/\s*\(demo\)$/, "");
 
 const store = createStore();
 const state = {
@@ -259,7 +270,38 @@ function pairCard(pair, { open = false } = {}) {
       h("span", { class: "bar" }, h("i", { style: `width:${pct}%` }))),
     h("div", { class: "body" },
       reasons.length ? h("ul", {}, reasons.map(r => h("li", {}, r.text))) : h("p", { class: "msg" }, "Nothing in common that we could find."),
+      watchTogether(pair),
       h("div", { class: "cols" }, col(a), col(b))));
+}
+
+function watchTogether(pair) {
+  const [rec] = recommendForPair(pair.a, pair.b, state.people, sim, 1);
+  if (!rec) return null;
+  const voters = rec.by.slice(0, 2).map(v => v.person.id === state.myId ? "you" : firstName(v.person));
+  const who = voters.length === 1 ? voters[0] : voters.join(" and ");
+  const both = pair.mine ? "you both" : "both of them";
+  return h("div", { class: "together" },
+    h("span", { class: "together-tag" }, "Watch together"),
+    filmCard(rec.film, { small: true }),
+    h("p", { class: "together-why" }, `${pair.mine ? "Neither of you" : "Neither of them"} picked it, but ${who} did, and ${voters.length === 1 && voters[0] !== "you" ? "matches" : "match"} ${both} well.`));
+}
+
+function recCard(me) {
+  const recs = recommendFor(me, state.people, sim, 3);
+  const card = h("div", { class: "card rec-card" },
+    h("h3", {}, "Recommended for you"),
+    h("p", { class: "map-sub" }, "Films your closest matches love that aren't on your list yet."));
+  if (!recs.length) {
+    card.append(h("p", { class: "msg" }, "Nothing yet. Recommendations show up as more people join."));
+    return card;
+  }
+  card.append(h("ol", { class: "recs" }, recs.map(r => {
+    const top = r.by.slice(0, 2).map(v => `${firstName(v.person)} (${Math.round(v.w * 100)}%)`);
+    const more = r.by.length - top.length;
+    const why = `Picked by ${top.join(" and ")}${more > 0 ? ` and ${more} more` : ""}.`;
+    return h("li", {}, filmCard(r.film, { small: true }), h("p", { class: "rec-why" }, why));
+  })));
+  return card;
 }
 
 function renderMine() {
@@ -273,6 +315,7 @@ function renderMine() {
     root.append(h("p", { class: "msg" }, "You're the first one here. Matches show up as soon as someone else joins."));
     return;
   }
+  root.append(recCard(me));
   const ranked = others.map(o => ({ a: me, b: o, mine: true, ...compare(me, o, true) })).sort((x, y) => y.raw - x.raw);
   const shown = state.showAll ? ranked : ranked.slice(0, 5);
   shown.forEach((p, i) => root.append(pairCard(p, { open: i === 0 })));
@@ -303,13 +346,13 @@ function tasteMap(people) {
   const n = people.length;
   const pct = Array.from({ length: n }, () => Array(n).fill(100));
   for (let i = 0; i < n; i++)
-    for (let j = i + 1; j < n; j++) pct[i][j] = pct[j][i] = compare(people[i], people[j]).pct;
+    for (let j = i + 1; j < n; j++) pct[i][j] = pct[j][i] = sim(people[i], people[j]);
   const D = pct.map((row, i) => row.map((p, j) => (i === j ? 0 : 1 - p / 100)));
   const res = pcoa(D);
   if (!res) return card;
 
   const narrow = window.innerWidth < 600;
-  const W = narrow ? 440 : 720, H = narrow ? 520 : 440, PAD = narrow ? 28 : 44, LABEL = narrow ? 70 : 120;
+  const W = narrow ? 440 : 640, H = narrow ? 480 : 420, PAD = narrow ? 28 : 44, LABEL = narrow ? 70 : 120;
   const xs = res.coords.map(c => c[0]), ys = res.coords.map(c => c[1]);
   const span = a => Math.max(1e-6, Math.max(...a) - Math.min(...a));
   // one scale for both axes, so distances on screen stay true to the analysis
@@ -364,10 +407,11 @@ function tasteMap(people) {
     svg.append(g);
   }
 
-  card.append(h("div", { class: "map-wrap" }, svg, tip));
-  if (meIdx >= 0) card.append(h("div", { class: "map-legend" },
+  const side = h("div", { class: "map-side" });
+  card.append(h("div", { class: "map-layout" }, h("div", { class: "map-wrap" }, svg, tip), side));
+  if (meIdx >= 0) side.append(h("div", { class: "map-legend" },
     h("span", {}, h("i", { class: "k me" }), "You"), h("span", {}, h("i", { class: "k" }), "Classmates")));
-  card.append(h("p", { class: "msg map-note" },
+  side.append(h("p", { class: "msg map-note" },
     `Distance between two people = 100% minus their match score. The two axes are the directions that spread the class out the most (principal coordinates analysis); together they show ${e1 + e2}% of the variation, so some differences are hidden in other dimensions.`));
   return card;
 }
@@ -450,6 +494,7 @@ function cleanPerson(p) {
 function onPeople(raw) {
   const list = (Array.isArray(raw) ? raw : []).slice(0, 500).map(cleanPerson).filter(Boolean);
   state.people = list;
+  simCache = new Map();
   const me = list.find(p => p.id === state.myId);
   if (me && !state.hydrated) { // first time we see our saved entry: prefill the form
     state.hydrated = true;

@@ -101,3 +101,22 @@ export async function getFilm(s) {
 export function posterUrl(film, size = "w185") {
   return film.poster ? `https://image.tmdb.org/t/p/${size}${film.poster}` : null;
 }
+
+// Films TMDB recommends for one film (falls back to "similar" when there are no recommendations).
+// Light objects {id,title,year,poster}; cached per film id; [] in demo mode or on error.
+const recCache = new Map();
+export function tmdbRecs(id) {
+  if (!hasTMDB || String(id).startsWith("demo-")) return Promise.resolve([]);
+  if (!recCache.has(id)) {
+    recCache.set(id, (async () => {
+      let data = await tmdb(`/movie/${id}/recommendations`, { language: LANG, page: "1" });
+      let results = data.results || [];
+      if (!results.length) {
+        data = await tmdb(`/movie/${id}/similar`, { language: LANG, page: "1" });
+        results = data.results || [];
+      }
+      return results.filter(r => r && !r.adult && r.title).slice(0, 20).map(stub);
+    })().catch(() => { recCache.delete(id); return []; }));
+  }
+  return recCache.get(id);
+}

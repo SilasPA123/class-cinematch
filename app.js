@@ -1,5 +1,6 @@
 import { createStore } from "./store.js";
 import { searchFilms, getFilm, posterUrl, hasTMDB, resolvePreset, presetAvailableOffline, importLetterboxd, letterboxdProxy } from "./films.js";
+import { beyondFor, beyondForPair } from "./beyond.js";
 import { compare, allPairs } from "./match.js";
 import { PRESETS } from "./presets.js";
 import { pcoa } from "./pcoa.js";
@@ -262,7 +263,8 @@ function pairCard(pair, { open = false } = {}) {
         (f.genres || []).length ? h("span", { class: "g" }, f.genres.slice(0, 2).join(", ")) : null));
   };
   const col = p => h("div", {}, h("h4", {}, pair.mine && p === a ? "You" : p.name), h("div", { class: "tiles" }, p.films.map(tile)));
-  return h("details", { class: "pair", open },
+  const newBox = beyondPair(pair);
+  const details = h("details", { class: "pair", open },
     h("summary", {},
       h("span", { class: "names" }, pair.mine ? b.name : `${a.name} and ${b.name}`),
       h("span", { class: "pct" }, pct + "%"),
@@ -271,7 +273,43 @@ function pairCard(pair, { open = false } = {}) {
     h("div", { class: "body" },
       reasons.length ? h("ul", {}, reasons.map(r => h("li", {}, r.text))) : h("p", { class: "msg" }, "Nothing in common that we could find."),
       watchTogether(pair),
+      newBox,
       h("div", { class: "cols" }, col(a), col(b))));
+  if (newBox) {
+    if (open) { newBox.loaded = true; queueMicrotask(newBox.load); }
+    details.addEventListener("toggle", () => { if (details.open && !newBox.loaded) { newBox.loaded = true; newBox.load(); } });
+  }
+  return details;
+}
+
+const quoted = t => "“" + t + "”";
+const classFilmIds = () => new Set(state.people.flatMap(p => p.films.map(f => f.id)));
+const whoName = p => (!p || p.id === state.myId ? "you" : firstName(p));
+
+function newTile(film, why) {
+  const url = posterUrl(film, "w342");
+  return h("figure", { class: "tile new" },
+    url ? h("img", { src: url, alt: film.title, loading: "lazy" }) : h("div", { class: "ph" }, film.title),
+    h("figcaption", {}, h("b", {}, film.title), film.year ? h("span", {}, String(film.year)) : null, h("span", { class: "why" }, why)));
+}
+
+// Fill `el` once the async result is ready, unless the page re-rendered in the meantime.
+function fillLater(el, promise, render) {
+  promise.then(res => { if (el.isConnected) el.replaceChildren(...render(res)); })
+    .catch(() => { if (el.isConnected) el.replaceChildren(h("p", { class: "msg" }, "Couldn't reach TMDB just now.")); });
+}
+
+function beyondPair(pair) {
+  if (!hasTMDB) return null;
+  const box = h("div", { class: "together-new" }, h("p", { class: "msg" }, "Looking beyond the class..."));
+  const load = () => fillLater(box, beyondForPair(pair.a, pair.b, classFilmIds()), rec => {
+    if (!rec) return [h("p", { class: "msg" }, "TMDB had nothing new for this pair.")];
+    const parts = rec.because.map(b => `${quoted(b.film.title)} (${whoName(b.who)})`);
+    const why = rec.both ? `TMDB links it to ${parts[0]} and ${parts[1]}.` : `TMDB links it to ${parts[0]}.`;
+    return [h("span", { class: "together-tag" }, "Or something new"), filmCard(rec.film, { small: true }), h("p", { class: "together-why" }, why)];
+  });
+  box.load = load;
+  return box;
 }
 
 function watchTogether(pair) {
@@ -290,18 +328,39 @@ function recCard(me) {
   const recs = recommendFor(me, state.people, sim, 3);
   const card = h("div", { class: "card rec-card" },
     h("h3", {}, "Recommended for you"),
-    h("p", { class: "map-sub" }, "Films your closest matches love that aren't on your list yet."));
+    h("p", { class: "map-sub" }, "Films your closest matches love, plus new ones TMDB connects to your list."));
   if (!recs.length) {
-    card.append(h("p", { class: "msg" }, "Nothing yet. Recommendations show up as more people join."));
+    card.append(h("p", { class: "msg" }, "Nothing from the class yet. More show up as people join."));
+    appendBeyond(card, me);
     return card;
   }
+  card.append(h("h4", { class: "rec-sub" }, "From the class"));
   card.append(h("ol", { class: "recs" }, recs.map(r => {
     const top = r.by.slice(0, 2).map(v => `${firstName(v.person)} (${Math.round(v.w * 100)}%)`);
     const more = r.by.length - top.length;
     const why = `Picked by ${top.join(" and ")}${more > 0 ? ` and ${more} more` : ""}.`;
     return h("li", {}, filmCard(r.film, { small: true }), h("p", { class: "rec-why" }, why));
   })));
+  appendBeyond(card, me);
   return card;
+}
+
+function appendBeyond(card, me) {
+  if (!hasTMDB) return;
+  const closest = state.people.filter(p => p.id !== me.id)
+    .map(p => ({ person: p, pct: sim(me, p) })).sort((x, y) => y.pct - x.pct).slice(0, 2);
+  const grid = h("div", { class: "tiles new-tiles" }, h("p", { class: "msg" }, "Looking beyond the class..."));
+  card.append(h("h4", { class: "rec-sub" }, "Beyond the class"), grid);
+  fillLater(grid, beyondFor(me, closest, classFilmIds(), 4), recs => {
+    if (!recs.length) return [h("p", { class: "msg" }, "TMDB had nothing new for your list.")];
+    return recs.map(r => {
+      const b = r.because.slice(0, 2);
+      const why = b.length === 2 && !b[0].who && !b[1].who
+        ? `Because you picked ${quoted(b[0].film.title)} and ${quoted(b[1].film.title)}`
+        : `Because ${whoName(b[0].who)} picked ${quoted(b[0].film.title)}`;
+      return newTile(r.film, why);
+    });
+  });
 }
 
 function renderMine() {

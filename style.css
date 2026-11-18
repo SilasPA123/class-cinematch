@@ -313,3 +313,14 @@ footer p { max-width: 70ch; margin: 0 auto; }
 .together .film { grid-column: 1; }
 .together-why { grid-column: 2; margin: 0; font-size: 0.9rem; color: var(--muted-light); }
 @media (max-width: 600px) { .together { grid-template-columns: 1fr; } .together-why { grid-column: 1; } }
+
+/* ---------- beyond the class ---------- */
+.rec-sub { margin: 22px 0 14px; font: 700 0.8rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: #7A4A00; }
+.rec-card .map-sub + .rec-sub { margin-top: 8px; }
+.new-tiles { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 16px; max-width: 760px; }
+.new-tiles > .msg { grid-column: 1 / -1; margin: 0; }
+.tile.new figcaption .why { color: var(--muted-light); font-size: 0.75rem; margin-top: 2px; }
+.together-new { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; margin: -10px 0 22px; padding: 12px 14px; background: #fff; border: 2px dashed var(--ink); border-radius: 10px; }
+.together-new > .msg { grid-column: 1 / -1; margin: 0; }
+.together-new .film { grid-column: 1; }
+@media (max-width: 600px) { .together-new { grid-template-columns: 1fr; } .together-new .together-why { grid-column: 1; } }
